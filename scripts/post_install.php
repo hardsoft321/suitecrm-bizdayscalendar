@@ -6,42 +6,17 @@
 function post_install()
 {
     global $db;
-    $ID_NAME = 'bizdayscalendar';
     $EOL = PHP_SAPI === 'cli' ? PHP_EOL : '<br />';
-    $query = "SELECT id, version FROM upgrade_history WHERE id_name = '{$ID_NAME}' ORDER BY date_entered DESC";
-    $result = $db->query($query);
-    $previous_version = "";
-    while($row = $db->fetchByAssoc($result)) {
-        if(strnatcmp($row['version'], $previous_version) > 0) {
-            $previous_version = $row['version'];
+    $sql_file = file_get_contents(__DIR__.'/data.sql');
+    $sql = explode("\n", $sql_file);
+    foreach($sql as $query) {
+        $query = rtrim($query, '; ');
+        if($query) {
+            $res = $db->query($query, true);
+            $count += $db->getRowCount($res);
         }
     }
-    echo "Previous version: $previous_version{$EOL}";
-    $files = glob(__DIR__."/data*.sql");
-    natsort($files);
-    $count = 0;
-    foreach($files as $file) {
-        if(!preg_match('#scripts/data\-?(.*)\.sql$#', $file, $matches)) {
-            sugar_die('preg_match error on '.var_export($file, true));
-        }
-        $version = $matches[1];
-        echo "Version: $version... ";
-        if($previous_version && strnatcmp($previous_version, $version) >= 0) {
-            echo "skip{$EOL}";
-            continue;
-        }
-        echo "installing{$EOL}";
-        $sql_file = file_get_contents($file);
-        $sql = explode("\n", $sql_file);
-        foreach($sql as $query) {
-            $query = rtrim($query, '; ');
-            if($query) {
-                $res = $db->query($query, true);
-                $count += $db->getRowCount($res);
-            }
-        }
-    }
-    echo "Inserted rows: $count{$EOL}";
+    echo "Number of rows affected: $count{$EOL}";
 
     if($db->dbType == 'mysql') { //TODO:
 //DROP FUNCTION IF EXISTS BizDaysInclusive;
@@ -82,6 +57,7 @@ function post_install()
 //DELIMITER ;
     }
     elseif($db->dbType == 'oci8') {
+        echo "Installing pl/sql function BizDaysInclusive{$EOL}";
         $db->query("
 CREATE OR REPLACE FUNCTION BizDaysInclusive(d1 IN DATE, d2 IN DATE)
 RETURN INT

@@ -1,3 +1,4 @@
+DELETE FROM BizDaysCalendar;
 INSERT INTO BizDaysCalendar VALUES ('2011-01-03','H');
 INSERT INTO BizDaysCalendar VALUES ('2011-01-04','H');
 INSERT INTO BizDaysCalendar VALUES ('2011-01-05','H');

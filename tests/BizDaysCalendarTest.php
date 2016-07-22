@@ -36,9 +36,10 @@ SELECT CASE
     WHEN BizDaysInclusive('2016-02-03', '2016-02-16') != 9 THEN 'error24'
     WHEN BizDaysInclusive('2016-02-03', '2016-02-17') !=10 THEN 'error25'
     WHEN BizDaysInclusive('2016-02-03', '2016-02-18') !=11 THEN 'error26'
+    WHEN BizDaysInclusive('2016-02-12', '2016-02-13') != 0 THEN 'error27'
     ELSE 'no_errors'
     END AS error_code
-FROM dual;
+FROM dual
 SQL;
         return $sql;
     }
