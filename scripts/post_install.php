@@ -1,7 +1,7 @@
 <?php
 /**
  * @license http://hardsoft321.org/license/ GPLv3
- * @author Evgeny Pervushin <pea@lab321.ru>
+ * @author hardsoft321.org
  */
 function post_install()
 {
@@ -68,8 +68,8 @@ days INT;
 holidays INT;
 workdays INT;
 BEGIN
-    SELECT to_char(d1, 'D') INTO dow1 FROM dual;
-    SELECT to_char(d2, 'D') INTO dow2 FROM dual;
+    SELECT 1 + TRUNC(d1) - TRUNC(d1, 'IW') INTO dow1 FROM dual;
+    SELECT 1 + TRUNC(d2) - TRUNC(d2, 'IW') INTO dow2 FROM dual;
     SELECT FLOOR((d2 - d1) / 7) * 5 +
             CASE
               WHEN dow1=7 AND dow2=6 THEN 5
@@ -84,11 +84,11 @@ BEGIN
     SELECT COUNT(*) INTO holidays
     FROM BizDaysCalendar
     WHERE calendar_date >= d1 AND calendar_date <= d2 AND is_holiday = 'H'
-        AND to_char(calendar_date, 'D') NOT IN (6,7);
+        AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') NOT IN (6,7);
     SELECT COUNT(*) INTO workdays
     FROM BizDaysCalendar
     WHERE calendar_date >= d1 AND calendar_date <= d2 AND is_holiday = 'W'
-        AND to_char(calendar_date, 'D') IN (6,7);
+        AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') IN (6,7);
     RETURN (days-1)-holidays+workdays;
 END;");
     }
