@@ -6,7 +6,7 @@
 $dictionary['BizDaysCalendar'] = array(
     'table' => 'BizDaysCalendar',
     'fields' => array (
-        array('name' =>'calendar_date', 'type' =>'date'),
+        array('name' =>'calendar_date', 'type' =>'date', 'required' => 'true', 'isnull' => 'false'),
         array('name' =>'is_holiday', 'type' =>'char', 'len'=>'1')
      ),
      'indices' => array (
