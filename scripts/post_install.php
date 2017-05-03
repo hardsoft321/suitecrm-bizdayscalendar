@@ -83,13 +83,79 @@ BEGIN
             END INTO days FROM dual;
     SELECT COUNT(*) INTO holidays
     FROM BizDaysCalendar
-    WHERE calendar_date >= d1 AND calendar_date <= d2 AND is_holiday = 'H'
+    WHERE calendar_date >= TRUNC(d1) AND calendar_date <= d2 AND is_holiday = 'H'
         AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') NOT IN (6,7);
     SELECT COUNT(*) INTO workdays
     FROM BizDaysCalendar
-    WHERE calendar_date >= d1 AND calendar_date <= d2 AND is_holiday = 'W'
+    WHERE calendar_date >= TRUNC(d1) AND calendar_date <= d2 AND is_holiday = 'W'
         AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') IN (6,7);
     RETURN (days-1)-holidays+workdays;
 END;");
+
+        echo "Installing pl/sql function BizDaysFloat{$EOL}";
+        $db->query("
+CREATE OR REPLACE FUNCTION BizDaysFloat(d1_utc IN DATE, d2_utc IN DATE, user_offset_hours FLOAT)
+RETURN FLOAT
+IS
+start_hour CONSTANT FLOAT := 7;
+end_hour CONSTANT FLOAT := 20;
+d1 DATE;
+d2 DATE;
+dow1 INT;
+dow2 INT;
+is_holiday1 NUMBER(1);
+is_holiday2 NUMBER(1);
+holidays INT;
+workdays INT;
+BEGIN
+    IF d1_utc > d2_utc THEN
+        RETURN BizDaysFloat(d2_utc, d1_utc, user_offset_hours);
+    END IF;
+
+    SELECT d1_utc + user_offset_hours/24 INTO d1 FROM dual;
+    SELECT d2_utc + user_offset_hours/24 INTO d2 FROM dual;
+
+    SELECT 1 + TRUNC(d1) - TRUNC(d1, 'IW') INTO dow1 FROM dual;
+    SELECT 1 + TRUNC(d2) - TRUNC(d2, 'IW') INTO dow2 FROM dual;
+
+    IF dow1 NOT IN (6,7) THEN
+      SELECT LEAST(1, COUNT(*)) INTO is_holiday1
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d1) AND is_holiday = 'H';
+    ELSE
+      SELECT 1 - LEAST(1, COUNT(*)) INTO is_holiday1
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d1) AND is_holiday = 'W';
+    END IF;
+
+    IF dow2 NOT IN (6,7) THEN
+      SELECT LEAST(1, COUNT(*)) INTO is_holiday2
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d2) AND is_holiday = 'H';
+    ELSE
+      SELECT 1 - LEAST(1, COUNT(*)) INTO is_holiday2
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d2) AND is_holiday = 'W';
+    END IF;
+
+    SELECT COUNT(*) INTO holidays
+    FROM BizDaysCalendar
+    WHERE calendar_date >= TRUNC(d1) AND calendar_date <= d2 AND is_holiday = 'H'
+        AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') NOT IN (6,7);
+
+    SELECT COUNT(*) INTO workdays
+    FROM BizDaysCalendar
+    WHERE calendar_date >= TRUNC(d1) AND calendar_date <= d2 AND is_holiday = 'W'
+        AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') IN (6,7);
+
+    RETURN GREATEST(6 - dow1, 0)
+        + FLOOR( ( (TRUNC(d2)-dow2) - (TRUNC(d1)+8-dow1) + 1 ) / 7 * 5 )
+        + LEAST(5, dow2)
+        - holidays + workdays
+        + CASE WHEN is_holiday1 = 1 THEN 0 ELSE -1 + GREATEST(0, LEAST(1, ((TRUNC(d1) - d1) * 24 +   end_hour)/(end_hour - start_hour))) END
+        + CASE WHEN is_holiday2 = 1 THEN 0 ELSE -1 + GREATEST(0, LEAST(1, ((d2 - TRUNC(d2)) * 24 - start_hour)/(end_hour - start_hour))) END
+    ;
+END;
+");
     }
 }
