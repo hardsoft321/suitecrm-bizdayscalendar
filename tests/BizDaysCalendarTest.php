@@ -11,7 +11,7 @@ class BizDaysCalendarTest
 SELECT CASE
     WHEN BizDaysInclusive('2016-02-01', '2016-02-02') != 1 THEN 'error1'
     WHEN BizDaysInclusive('2016-02-01', '2016-02-01') != 0 THEN 'error2'
-    WHEN BizDaysInclusive('2016-02-02', '2016-02-01') !=-1 THEN 'error3'
+    WHEN BizDaysInclusive('2016-02-02', '2016-02-01') != 1 THEN 'error3'
     WHEN BizDaysInclusive('2016-02-15', '2016-02-17') != 2 THEN 'error4'
     WHEN BizDaysInclusive('2016-02-19', '2016-02-20') != 1 THEN 'error5'
     WHEN BizDaysInclusive('2016-02-19', '2016-02-21') != 1 THEN 'error6'
@@ -40,6 +40,7 @@ SELECT CASE
     WHEN BizDaysInclusive('2017-01-01', '2017-12-31') != 246 THEN 'error2017'
     WHEN BizDaysInclusive('2017-03-08', '2017-03-09') != 0 THEN 'error28'
     WHEN BizDaysInclusive('2017-03-08 00:00:01', '2017-03-09') != 0 THEN 'error29'
+    WHEN BizDaysInclusive('2018-12-17 00:00:01', '2018-12-24') != 5 THEN 'error30'
     ELSE 'no_errors'
     END AS error_code
 FROM dual

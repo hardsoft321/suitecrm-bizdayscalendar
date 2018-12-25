@@ -64,32 +64,53 @@ RETURN INT
 IS
 dow1 INT;
 dow2 INT;
-days INT;
+is_holiday1 NUMBER(1);
+is_holiday2 NUMBER(1);
 holidays INT;
 workdays INT;
 BEGIN
+    IF d1 > d2 THEN
+        RETURN BizDaysInclusive(d2, d1);
+    END IF;
+
     SELECT 1 + TRUNC(d1) - TRUNC(d1, 'IW') INTO dow1 FROM dual;
     SELECT 1 + TRUNC(d2) - TRUNC(d2, 'IW') INTO dow2 FROM dual;
-    SELECT FLOOR((d2 - d1) / 7) * 5 +
-            CASE
-              WHEN dow1=7 AND dow2=6 THEN 5
-              WHEN dow1 IN (6,7) AND dow2 IN (6,7) THEN 0
-              WHEN dow1=dow2 THEN 1
-              WHEN dow1 IN (6,7) AND dow2 NOT IN (6,7) THEN dow2
-              WHEN dow1 NOT IN (6,7) AND dow2 IN(6,7) THEN 6-dow1
-              WHEN dow1<=dow2 THEN dow2-dow1+1
-              WHEN dow1>dow2 THEN 5-(dow1-dow2-1)
-              ELSE 0
-            END INTO days FROM dual;
+
+    IF dow1 NOT IN (6,7) THEN
+      SELECT LEAST(1, COUNT(*)) INTO is_holiday1
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d1) AND is_holiday = 'H';
+    ELSE
+      SELECT 1 - LEAST(1, COUNT(*)) INTO is_holiday1
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d1) AND is_holiday = 'W';
+    END IF;
+
+    IF dow2 NOT IN (6,7) THEN
+      SELECT LEAST(1, COUNT(*)) INTO is_holiday2
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d2) AND is_holiday = 'H';
+    ELSE
+      SELECT 1 - LEAST(1, COUNT(*)) INTO is_holiday2
+      FROM BizDaysCalendar
+      WHERE calendar_date = TRUNC(d2) AND is_holiday = 'W';
+    END IF;
+
     SELECT COUNT(*) INTO holidays
     FROM BizDaysCalendar
     WHERE calendar_date >= TRUNC(d1) AND calendar_date <= d2 AND is_holiday = 'H'
         AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') NOT IN (6,7);
+
     SELECT COUNT(*) INTO workdays
     FROM BizDaysCalendar
     WHERE calendar_date >= TRUNC(d1) AND calendar_date <= d2 AND is_holiday = 'W'
         AND 1 + TRUNC(calendar_date) - TRUNC(calendar_date, 'IW') IN (6,7);
-    RETURN (days-1)-holidays+workdays;
+
+    RETURN GREATEST(6 - dow1, 0)
+        + FLOOR( ( (TRUNC(d2)-dow2) - (TRUNC(d1)+8-dow1) + 1 ) / 7 * 5 )
+        + LEAST(5, dow2)
+        - holidays + workdays
+        - 1;
 END;");
 
         echo "Installing pl/sql function BizDaysFloat{$EOL}";
