@@ -9,7 +9,7 @@ $manifest = array(
     'published_date' => '2016-07-20',
     'type' => 'module',
     'remove_tables' => 'prompt',
-    'version' => '1.2.0',
+    'version' => '1.2.1',
 );
 $installdefs = array(
     'id' => 'bizdayscalendar',
