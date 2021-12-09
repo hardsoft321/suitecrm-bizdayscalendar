@@ -9,6 +9,7 @@ function post_install()
     $EOL = PHP_SAPI === 'cli' ? PHP_EOL : '<br />';
     $sql_file = file_get_contents(__DIR__.'/data.sql');
     $sql = explode("\n", $sql_file);
+    $count = 0;
     foreach($sql as $query) {
         $query = rtrim($query, '; ');
         if($query) {
@@ -111,15 +112,14 @@ BEGIN
         + LEAST(5, dow2)
         - holidays + workdays
         - 1;
-END;");
+END;", true);
 
         echo "Installing pl/sql function BizDaysFloat{$EOL}";
         $db->query("
-CREATE OR REPLACE FUNCTION BizDaysFloat(d1_utc IN DATE, d2_utc IN DATE, user_offset_hours FLOAT)
+CREATE OR REPLACE FUNCTION BizDaysFloat(d1_utc IN DATE, d2_utc IN DATE, user_offset_hours IN FLOAT DEFAULT 0
+  , start_hour IN FLOAT DEFAULT 7, end_hour IN FLOAT DEFAULT 20)
 RETURN FLOAT
 IS
-start_hour CONSTANT FLOAT := 7;
-end_hour CONSTANT FLOAT := 20;
 d1 DATE;
 d2 DATE;
 dow1 INT;
@@ -130,7 +130,7 @@ holidays INT;
 workdays INT;
 BEGIN
     IF d1_utc > d2_utc THEN
-        RETURN BizDaysFloat(d2_utc, d1_utc, user_offset_hours);
+        RETURN BizDaysFloat(d2_utc, d1_utc, user_offset_hours, start_hour, end_hour);
     END IF;
 
     SELECT d1_utc + user_offset_hours/24 INTO d1 FROM dual;
@@ -177,6 +177,17 @@ BEGIN
         + CASE WHEN is_holiday2 = 1 THEN 0 ELSE -1 + GREATEST(0, LEAST(1, ((d2 - TRUNC(d2)) * 24 - start_hour)/(end_hour - start_hour))) END
     ;
 END;
-");
+", true);
+
+        echo "Installing pl/sql function BizDaysMinutes{$EOL}";
+        $db->query("
+CREATE OR REPLACE FUNCTION BizDaysMinutes(d1_utc IN DATE, d2_utc IN DATE, user_offset_hours IN FLOAT DEFAULT 0
+  , start_hour IN FLOAT DEFAULT 7, end_hour IN FLOAT DEFAULT 20)
+RETURN FLOAT
+IS
+BEGIN
+    RETURN BizDaysFloat(d1_utc, d2_utc, user_offset_hours, start_hour, end_hour) * (end_hour - start_hour) * 60;
+END;
+", true);
     }
 }

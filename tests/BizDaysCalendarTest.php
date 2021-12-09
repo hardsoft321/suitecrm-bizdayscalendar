@@ -127,6 +127,24 @@ SELECT CASE
     WHEN NVL(BizDaysFloat('2017-03-06 19:00:00', '2017-03-09 08:00:00', 12), -1) != 2 THEN 'error71'
     WHEN NVL(BizDaysFloat('2017-03-07 07:00:00', '2017-03-09 08:00:00', 0), -1) != 1+1/13 THEN 'error72'
     WHEN NVL(BizDaysFloat('2017-03-06 19:00:00', '2017-03-08 20:00:00', 12), -1) != 1+1/13 THEN 'error73'
+    WHEN ROUND(NVL(BizDaysFloat('2017-03-07 07:00:00', '2017-03-07 20:00:00', 0, 6, 21), -1), 10) != ROUND(13/15, 10) THEN 'error74'
+    WHEN ROUND(NVL(BizDaysFloat('2017-03-07 20:00:00', '2017-03-07 07:00:00', 0, 6, 21), -1), 10) != ROUND(13/15, 10) THEN 'error75'
+    ELSE 'no_errors'
+    END AS error_code
+FROM dual;
+SQL;
+        return $sql;
+    }
+
+    public function getBizDaysMinutesTestQuery()
+    {
+        $sql = <<<'SQL'
+SELECT CASE
+    WHEN ROUND(NVL(BizDaysMinutes('2019-10-11 07:00:00', '2019-10-11 07:05:00', 0), -1), 10) != 5 THEN 'error1'
+    WHEN ROUND(NVL(BizDaysMinutes('2019-10-11 07:00:00', '2019-10-11 07:05:30', 0), -1), 10) != 5.5 THEN 'error2'
+    WHEN ROUND(NVL(BizDaysMinutes('2019-10-11 07:00:00', '2019-10-11 07:05:00', 0, 8), -1), 10) != 0 THEN 'error3'
+    WHEN ROUND(NVL(BizDaysMinutes('2019-10-10 18:00:00', '2019-10-11 18:00:00', 0, 9, 18), -1), 10) != 9*60 THEN 'error4'
+    WHEN ROUND(NVL(BizDaysMinutes('2019-10-10 14:00:00', '2019-10-10 23:00:00', 3, 9, 18), -1), 10) != 60 THEN 'error5'
     ELSE 'no_errors'
     END AS error_code
 FROM dual;
